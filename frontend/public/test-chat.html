@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .error {
+            color: red;
+            margin: 10px 0;
+        }
+        .success {
+            color: green;
+            margin: 10px 0;
+        }
+        .info {
+            color: blue;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chat API Test</h1>
+    
+    <div id="tokenStatus" class="error"></div>
+    <div id="connectionStatus" class="info"></div>
+    
+    <div class="container">
+        <h2>Save Chat Message</h2>
+        <input type="text" id="message" placeholder="Enter message" style="width: 300px; padding: 10px;">
+        <input type="text" id="response" placeholder="Enter response" style="width: 300px; padding: 10px;">
+        <button onclick="saveChat()">Save Chat</button>
+        <pre id="saveResult"></pre>
+    </div>
+
+    <div class="container">
+        <h2>Get Chat History</h2>
+        <button onclick="getHistory()">Get History</button>
+        <pre id="historyResult"></pre>
+    </div>
+
+    <script>
+        // Get token from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        
+        // Display token status
+        const tokenStatus = document.getElementById('tokenStatus');
+        const connectionStatus = document.getElementById('connectionStatus');
+        
+        if (!token) {
+            tokenStatus.textContent = 'No token found. Please log in first.';
+            tokenStatus.className = 'error';
+        } else {
+            tokenStatus.textContent = 'Token found and ready to use.';
+            tokenStatus.className = 'success';
+            console.log('Token:', token);
+            
+            // Verify token and get user info
+            verifyToken();
+        }
+        
+        async function verifyToken() {
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const userData = await response.json();
+                    connectionStatus.textContent = `Connected to user: ${userData.name} (ID: ${userData._id})`;
+                    connectionStatus.className = 'success';
+                } else {
+                    connectionStatus.textContent = 'Failed to verify user connection';
+                    connectionStatus.className = 'error';
+                }
+            } catch (error) {
+                connectionStatus.textContent = 'Error verifying connection: ' + error.message;
+                connectionStatus.className = 'error';
+            }
+        }
+        
+        async function saveChat() {
+            if (!token) {
+                document.getElementById('saveResult').textContent = 'Error: No token available. Please log in first.';
+                return;
+            }
+
+            const message = document.getElementById('message').value;
+            const response = document.getElementById('response').value;
+            
+            try {
+                console.log('Sending request with token:', token);
+                const result = await fetch('http://localhost:5000/api/chat/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ message, response })
+                });
+                
+                const data = await result.json();
+                console.log('Response:', data);
+                document.getElementById('saveResult').textContent = JSON.stringify(data, null, 2);
+                
+                // After saving, verify the connection by getting history
+                getHistory();
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('saveResult').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        async function getHistory() {
+            if (!token) {
+                document.getElementById('historyResult').textContent = 'Error: No token available. Please log in first.';
+                return;
+            }
+
+            try {
+                console.log('Sending request with token:', token);
+                const result = await fetch('http://localhost:5000/api/chat/history', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await result.json();
+                console.log('Response:', data);
+                
+                if (data.success && data.chatHistory) {
+                    document.getElementById('historyResult').textContent = 
+                        `Found ${data.chatHistory.length} messages\n` +
+                        JSON.stringify(data, null, 2);
+                } else {
+                    document.getElementById('historyResult').textContent = 
+                        'No chat history found or error in response\n' +
+                        JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('historyResult').textContent = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html> 
