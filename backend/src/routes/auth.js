@@ -53,8 +53,8 @@ router.get('/callback', async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    // Redirect to frontend with token
-    res.redirect(`${process.env.FRONTEND_URL}/dashboard?token=${token}`);
+    // Redirect to Streamlit app with token
+    res.redirect(`http://localhost:8501?token=${token}`);
   } catch (error) {
     console.error('Auth callback error:', error);
     res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);

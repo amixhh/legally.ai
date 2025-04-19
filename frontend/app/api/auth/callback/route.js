@@ -84,10 +84,11 @@ export async function GET(request) {
       throw new Error(`Failed to save user information: ${userData.message || 'Unknown error'}`);
     }
 
-    const redirectUrl = new URL('/dashboard', request.url);
-    redirectUrl.searchParams.set('token', userData.token);
+    // Redirect to Streamlit app with token
+    const streamlitUrl = new URL('http://localhost:8501');
+    streamlitUrl.searchParams.set('token', userData.token);
     
-    return NextResponse.redirect(redirectUrl);
+    return NextResponse.redirect(streamlitUrl);
   } catch (error) {
     console.error('Callback Route - Error:', error);
     return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(error.message)}`, request.url));
